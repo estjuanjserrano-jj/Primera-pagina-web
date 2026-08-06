@@ -2,9 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Esta etiqueta meta es vital para celulares: evita que la pantalla haga zoom accidental al tocar los controles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minijuego - F1 Táctil y Colisiones</title>
+    <title>Minijuego - F1 Táctil y Colisiones (Corregido)</title>
     
     <style>
         body {
@@ -12,7 +11,7 @@
             overflow: hidden;
             font-family: 'Helvetica Neue', Arial, sans-serif;
             background-color: #ff7b54;
-            touch-action: none; /* Evita gestos de navegador en celulares */
+            touch-action: none;
         }
 
         #panel-control {
@@ -39,7 +38,6 @@
 
         #panel-control p { margin: 0; font-size: 0.9rem; color: #ccc; }
 
-        /* --- ESTILOS DEL GAMEPAD TÁCTIL PARA CELULARES --- */
         #controles-tactiles {
             position: absolute;
             bottom: 30px;
@@ -51,10 +49,7 @@
             z-index: 200;
         }
 
-        .grupo-botones {
-            display: flex;
-            gap: 10px;
-        }
+        .grupo-botones { display: flex; gap: 10px; }
 
         .btn-tactil {
             background: rgba(0, 255, 68, 0.15);
@@ -67,19 +62,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            user-select: none; /* Evita que el texto se seleccione al tocar */
+            user-select: none;
             cursor: pointer;
             backdrop-filter: blur(4px);
             transition: background 0.1s;
         }
 
-        /* Efecto al presionar el botón */
         .btn-tactil:active, .btn-tactil.presionado {
             background: rgba(0, 255, 68, 0.6);
             transform: scale(0.95);
         }
 
-        /* Ocultar las instrucciones de PC si la pantalla es muy pequeña (celulares) */
         @media (max-width: 600px) {
             #panel-control { display: none; }
             .btn-tactil { width: 55px; height: 55px; font-size: 20px; }
@@ -93,7 +86,6 @@
         <p>Usa teclado o botones táctiles</p>
     </div>
 
-    <!-- CONTROLES TÁCTILES EN PANTALLA -->
     <div id="controles-tactiles">
         <div class="grupo-botones">
             <div class="btn-tactil" id="btn-izq">⬅️</div>
@@ -108,7 +100,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // 1. CONFIGURACIÓN BÁSICA (Amanecer)
+        // CONFIGURACIÓN BÁSICA
         const escena = new THREE.Scene();
         escena.background = new THREE.Color(0xff7b54);
         escena.fog = new THREE.FogExp2(0xff9a76, 0.005); 
@@ -130,7 +122,7 @@
         luzSol.shadow.camera.top = 150; luzSol.shadow.camera.bottom = -150;
         escena.add(luzSol);
 
-        // 2. CONSTRUCCIÓN DEL FÓRMULA 1
+        // CONSTRUCCIÓN DEL COCHE
         const coche = new THREE.Group();
         const matVerde = new THREE.MeshStandardMaterial({ color: 0x008822, roughness: 0.2 });
         const matNegro = new THREE.MeshStandardMaterial({ color: 0x111111 });
@@ -157,7 +149,7 @@
         
         escena.add(coche);
 
-        // 3. GENERACIÓN DE LA CIUDAD Y ARRAY DE COLISIONES
+        // CIUDAD Y LÍMITES DE COLISIÓN (Hitboxes)
         const suelo = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshStandardMaterial({ color: 0x1a1a1c }));
         suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
 
@@ -168,7 +160,6 @@
         const bloqueGeo = new THREE.BoxGeometry(1, 1, 1);
         bloqueGeo.translate(0, 0.5, 0); 
         
-        // ¡NUEVO! Aquí guardaremos los límites de los edificios para estrellarnos
         const limitesEdificios = [];
 
         for(let i = 0; i < 350; i++) {
@@ -184,35 +175,29 @@
 
             edificio.position.set(posX, 0, posZ);
             edificio.castShadow = true;
+            edificio.receiveShadow = true;
             ciudad.add(edificio);
 
-            // Guardamos las coordenadas de las "paredes" de este edificio
-            // Sumamos 1.5 de margen para contar el tamaño del coche
+            // CORRECCIÓN: Margen ampliado a 2.5 para detectar la trompa del coche
             limitesEdificios.push({
-                minX: posX - (ancho/2) - 1.5,
-                maxX: posX + (ancho/2) + 1.5,
-                minZ: posZ - (profundo/2) - 1.5,
-                maxZ: posZ + (profundo/2) + 1.5
+                minX: posX - (ancho / 2) - 2.5,
+                maxX: posX + (ancho / 2) + 2.5,
+                minZ: posZ - (profundo / 2) - 2.5,
+                maxZ: posZ + (profundo / 2) + 2.5
             });
         }
         escena.add(ciudad);
 
-        // 4. LECTURA DE CONTROLES (Teclado y Táctil)
+        // CONTROLES
         const teclas = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
 
-        // Eventos de teclado
         window.addEventListener('keydown', (e) => { if(teclas.hasOwnProperty(e.code)) teclas[e.code] = true; });
         window.addEventListener('keyup', (e) => { if(teclas.hasOwnProperty(e.code)) teclas[e.code] = false; });
 
-        // Función para enlazar botones de pantalla a teclas virtuales
         function conectarBotonTactil(idBoton, codigoTecla) {
             const btn = document.getElementById(idBoton);
-            
-            // Para celulares (Touch)
             btn.addEventListener('touchstart', (e) => { e.preventDefault(); teclas[codigoTecla] = true; btn.classList.add('presionado'); }, {passive: false});
             btn.addEventListener('touchend', (e) => { e.preventDefault(); teclas[codigoTecla] = false; btn.classList.remove('presionado'); });
-            
-            // Para PC (Clic de ratón, útil para probar)
             btn.addEventListener('mousedown', (e) => { e.preventDefault(); teclas[codigoTecla] = true; btn.classList.add('presionado'); });
             btn.addEventListener('mouseup', (e) => { e.preventDefault(); teclas[codigoTecla] = false; btn.classList.remove('presionado'); });
             btn.addEventListener('mouseleave', (e) => { teclas[codigoTecla] = false; btn.classList.remove('presionado'); });
@@ -223,7 +208,7 @@
         conectarBotonTactil('btn-izq', 'ArrowLeft');
         conectarBotonTactil('btn-der', 'ArrowRight');
 
-        // 5. FÍSICA, MOVIMIENTO Y COLISIONES
+        // FÍSICA
         let velocidad = 0;
         let anguloDireccion = 0;
 
@@ -232,7 +217,7 @@
 
             if (teclas.ArrowUp) velocidad -= 0.015; 
             else if (teclas.ArrowDown) velocidad += 0.015;
-            else velocidad *= 0.97; // Fricción
+            else velocidad *= 0.97;
 
             velocidad = Math.max(Math.min(velocidad, 1.2), -1.2);
 
@@ -241,18 +226,17 @@
                 if (teclas.ArrowRight) anguloDireccion -= 0.05 * (velocidad < 0 ? 1 : -1);
             }
 
-            // GUARDAMOS LA POSICIÓN ANTES DE MOVER
+            // Guardar posición previa
             const posicionPreviaX = coche.position.x;
             const posicionPreviaZ = coche.position.z;
 
-            // MOVEMOS EL COCHE
+            // Intentar mover
             coche.rotation.y = anguloDireccion;
             coche.position.z += Math.cos(anguloDireccion) * velocidad;
             coche.position.x += Math.sin(anguloDireccion) * velocidad;
 
-            // DETECCIÓN DE COLISIONES
+            // Revisar colisión
             let choco = false;
-            // Revisamos cada edificio para ver si el coche se metió dentro
             for(let i = 0; i < limitesEdificios.length; i++) {
                 let limite = limitesEdificios[i];
                 if (coche.position.x > limite.minX && coche.position.x < limite.maxX &&
@@ -262,11 +246,11 @@
                 }
             }
 
-            // Si hay un choque, cancelamos el movimiento y hacemos rebotar el auto
-            if(choco) {
+            // CORRECCIÓN: Detenerse en seco al chocar
+            if (choco) {
                 coche.position.x = posicionPreviaX;
                 coche.position.z = posicionPreviaZ;
-                velocidad = -velocidad * 0.6; // Invierte la velocidad (efecto rebote)
+                velocidad = 0; // El coche pierde toda su fuerza y se detiene (muro)
             }
 
             // CÁMARA
