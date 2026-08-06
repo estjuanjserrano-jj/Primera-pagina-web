@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Minijuego - F1 en Bogotá (Realista)</title>
+    <title>Minijuego - F1 en Bogotá</title>
     
     <style>
         body {
             margin: 0;
             overflow: hidden;
             font-family: 'Helvetica Neue', Arial, sans-serif;
-            background-color: #8fa3b8; /* Gris azulado sabanero */
+            background-color: #8cb3d9; /* Azul grisáceo bogotano */
             touch-action: none;
         }
 
@@ -22,7 +22,7 @@
             color: #ffffff;
             padding: 15px;
             border-radius: 12px;
-            border-left: 4px solid #cc0000; /* Rojo TransMilenio */
+            border-left: 4px solid #a55142; /* Rojo ladrillo */
             pointer-events: none;
             z-index: 100;
             backdrop-filter: blur(5px);
@@ -32,12 +32,12 @@
         #panel-control h1 {
             margin: 0 0 5px 0;
             font-size: 1.2rem;
-            color: #ffcc00; /* Amarillo Bogotá */
+            color: #e87a5d;
             text-transform: uppercase;
             font-weight: bold;
         }
 
-        #panel-control p { margin: 0; font-size: 0.9rem; color: #ddd; }
+        #panel-control p { margin: 0; font-size: 0.9rem; color: #ccc; }
 
         #controles-tactiles {
             position: absolute;
@@ -53,8 +53,8 @@
         .grupo-botones { display: flex; gap: 10px; }
 
         .btn-tactil {
-            background: rgba(204, 0, 0, 0.2);
-            border: 2px solid rgba(204, 0, 0, 0.6);
+            background: rgba(165, 81, 66, 0.2);
+            border: 2px solid rgba(165, 81, 66, 0.6);
             color: white;
             font-size: 24px;
             width: 65px;
@@ -70,7 +70,7 @@
         }
 
         .btn-tactil:active, .btn-tactil.presionado {
-            background: rgba(204, 0, 0, 0.8);
+            background: rgba(165, 81, 66, 0.8);
             transform: scale(0.95);
         }
 
@@ -83,8 +83,8 @@
 <body>
 
     <div id="panel-control">
-        <h1>BOGOTÁ RACING</h1>
-        <p>Acelera por el carril exclusivo</p>
+        <h1>BOGOTÁ F1</h1>
+        <p>Acelera entre los cerros y el ladrillo</p>
     </div>
 
     <div id="controles-tactiles">
@@ -101,35 +101,35 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <script>
-        // 1. CONFIGURACIÓN DEL ENTORNO (Clima frío, cielo gris sabanero)
+        // 1. CONFIGURACIÓN DEL ENTORNO (Clima frío, cielo grisáceo)
         const escena = new THREE.Scene();
-        const colorCielo = 0x8fa3b8; 
-        const colorNiebla = 0x9bb0c4; 
+        const colorCielo = 0x8cb3d9; // Cielo azul frío
+        const colorNiebla = 0xa9c2d9; // Niebla andina
         
         escena.background = new THREE.Color(colorCielo);
-        escena.fog = new THREE.FogExp2(colorNiebla, 0.003); 
+        escena.fog = new THREE.FogExp2(colorNiebla, 0.0035); // Niebla un poco menos densa para ver los cerros
         
-        const camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1500);
         const renderizador = new THREE.WebGLRenderer({ antialias: true, alpha: false });
         renderizador.setSize(window.innerWidth, window.innerHeight);
         renderizador.shadowMap.enabled = true;
         renderizador.shadowMap.type = THREE.PCFSoftShadowMap; 
         document.body.appendChild(renderizador.domElement);
 
-        // ILUMINACIÓN (Luz difusa de día nublado)
-        const luzHemisferio = new THREE.HemisphereLight(0xffffff, 0x555566, 0.7);
+        // ILUMINACIÓN
+        const luzHemisferio = new THREE.HemisphereLight(0xffffff, 0x444455, 0.6);
         escena.add(luzHemisferio);
         
-        const luzSol = new THREE.DirectionalLight(0xffeedd, 0.8);
-        luzSol.position.set(200, 150, -200); 
+        const luzSol = new THREE.DirectionalLight(0xfff0dd, 1.2);
+        luzSol.position.set(200, 100, -200); 
         luzSol.castShadow = true;
-        luzSol.shadow.camera.left = -300; luzSol.shadow.camera.right = 300;
-        luzSol.shadow.camera.top = 300; luzSol.shadow.camera.bottom = -300;
+        luzSol.shadow.camera.left = -200; luzSol.shadow.camera.right = 200;
+        luzSol.shadow.camera.top = 200; luzSol.shadow.camera.bottom = -200;
         luzSol.shadow.mapSize.width = 2048;
         luzSol.shadow.mapSize.height = 2048;
         escena.add(luzSol);
 
-        // 2. CONSTRUCCIÓN DEL COCHE F1
+        // 2. CONSTRUCCIÓN DEL COCHE F1 (Mantenemos el verde)
         const coche = new THREE.Group();
         const matVerde = new THREE.MeshStandardMaterial({ color: 0x008822, roughness: 0.2 });
         const matNegro = new THREE.MeshStandardMaterial({ color: 0x111111 });
@@ -153,120 +153,86 @@
         }
         crearRuedaF1(1.1, -1.6); crearRuedaF1(-1.1, -1.6);
         crearRuedaF1(1.1, 1.4); crearRuedaF1(-1.1, 1.4);
-        
-        // Iniciamos el coche en el carril de TransMilenio
-        coche.position.x = 0;
         escena.add(coche);
 
         // 3. GENERACIÓN DE LA CIUDAD ESTILO BOGOTÁ
-        const limitesEdificios = [];
         
         // Suelo
         const suelo = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x2b2b2b }));
         suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
 
-        // Carretera Mixta (Asfalto negro)
-        const carretera = new THREE.Mesh(new THREE.PlaneGeometry(30, 3000), new THREE.MeshStandardMaterial({ color: 0x151515 }));
+        // Carretera (Avenida principal)
+        const carretera = new THREE.Mesh(new THREE.PlaneGeometry(25, 3000), new THREE.MeshStandardMaterial({ color: 0x111111 }));
         carretera.rotation.x = -Math.PI / 2; carretera.position.y = 0.01; escena.add(carretera);
 
-        // Carril Exclusivo TransMilenio (Rojo)
-        const carrilTM = new THREE.Mesh(new THREE.PlaneGeometry(8, 3000), new THREE.MeshStandardMaterial({ color: 0x8b1c1c, roughness: 0.8 }));
-        carrilTM.rotation.x = -Math.PI / 2; carrilTM.position.y = 0.02; escena.add(carrilTM);
-
-        // Separadores amarillos (Pistones o líneas)
-        const lineaGeo = new THREE.PlaneGeometry(0.3, 4);
-        const lineaMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 }); // Amarillo
-        for(let i = -1500; i < 1500; i += 8) {
-            const lineaIzq = new THREE.Mesh(lineaGeo, lineaMat);
-            lineaIzq.rotation.x = -Math.PI / 2; lineaIzq.position.set(-4.2, 0.03, i);
-            escena.add(lineaIzq);
-            
-            const lineaDer = new THREE.Mesh(lineaGeo, lineaMat);
-            lineaDer.rotation.x = -Math.PI / 2; lineaDer.position.set(4.2, 0.03, i);
-            escena.add(lineaDer);
-        }
-
-        // --- EDIFICIOS ICÓNICOS ---
-        
-        // Torre Colpatria
-        const colpatriaMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 });
-        const colpatria = new THREE.Mesh(new THREE.BoxGeometry(18, 160, 18), colpatriaMat);
-        colpatria.position.set(-45, 80, -200); // Lado izquierdo de la vía
-        colpatria.castShadow = true; colpatria.receiveShadow = true;
-        escena.add(colpatria);
-        
-        limitesEdificios.push({
-            minX: -45 - 9 - 2.5, maxX: -45 + 9 + 2.5,
-            minZ: -200 - 9 - 2.5, maxZ: -200 + 9 + 2.5
-        });
-
-        // --- EDIFICIOS GENÉRICOS (Ladrillo) ---
+        // LÍMITES DE COLISIÓN
+        const limitesEdificios = [];
         const ciudad = new THREE.Group();
         const bloqueGeo = new THREE.BoxGeometry(1, 1, 1);
         bloqueGeo.translate(0, 0.5, 0); 
         
-        const coloresBogota = [0x8b3a3a, 0xa55142, 0x9c4a3d, 0x555555, 0x404040, 0xaaaaaa, 0x7a3a29];
+        // Paleta de colores: Ladrillo bogotano y concreto
+        const coloresBogota = [
+            0x8b3a3a, // Ladrillo rojo oscuro
+            0xa55142, // Ladrillo terracota (muy común)
+            0x9c4a3d, // Ladrillo clásico
+            0x555555, // Concreto gris
+            0x404040, // Gris oscuro
+            0xaaaaaa  // Concreto claro
+        ];
 
-        for(let i = 0; i < 500; i++) {
-            const edificioMat = new THREE.MeshStandardMaterial({ 
-                color: coloresBogota[Math.floor(Math.random() * coloresBogota.length)], 
-                roughness: 0.9 
-            });
+        // Generamos más edificios para mayor densidad
+        for(let i = 0; i < 450; i++) {
+            const colorAleatorio = coloresBogota[Math.floor(Math.random() * coloresBogota.length)];
+            const edificioMat = new THREE.MeshStandardMaterial({ color: colorAleatorio, roughness: 0.9 });
             const edificio = new THREE.Mesh(bloqueGeo, edificioMat);
             
-            const ancho = 12 + Math.random() * 25;
-            const profundo = 12 + Math.random() * 25;
-            const alto = 15 + Math.random() * (Math.random() > 0.85 ? 100 : 50); 
+            const ancho = 10 + Math.random() * 25;
+            const profundo = 10 + Math.random() * 25;
+            // Edificios variados, algunos muy altos (tipo centro internacional)
+            const alto = 20 + Math.random() * (Math.random() > 0.8 ? 120 : 60); 
             edificio.scale.set(ancho, alto, profundo);
 
-            let posX = (Math.random() - 0.5) * 1200;
-            let posZ = (Math.random() - 0.5) * 1200;
+            let posX = (Math.random() - 0.5) * 1000;
+            let posZ = (Math.random() - 0.5) * 1000;
             
-            // Dejamos libre la avenida principal (30m de ancho)
-            if (Math.abs(posX) < 25) posX += (posX > 0 ? 25 : -25);
-            // Alejamos los edificios de la Torre Colpatria
-            if (Math.abs(posX - (-45)) < 30 && Math.abs(posZ - (-200)) < 30) continue; 
-            // No ponemos edificios en los cerros (Derecha)
-            if (posX > 300) posX -= 500;
+            // Dejamos libre la avenida principal
+            if (Math.abs(posX) < 22) posX += (posX > 0 ? 22 : -22);
+
+            // No ponemos edificios donde estarán los cerros (lado derecho, posX > 300)
+            if (posX > 250) posX -= 400;
 
             edificio.position.set(posX, 0, posZ);
-            edificio.castShadow = true; edificio.receiveShadow = true;
+            edificio.castShadow = true;
+            edificio.receiveShadow = true;
             ciudad.add(edificio);
 
             limitesEdificios.push({
-                minX: posX - (ancho / 2) - 2.5, maxX: posX + (ancho / 2) + 2.5,
-                minZ: posZ - (profundo / 2) - 2.5, maxZ: posZ + (profundo / 2) + 2.5
+                minX: posX - (ancho / 2) - 2.5,
+                maxX: posX + (ancho / 2) + 2.5,
+                minZ: posZ - (profundo / 2) - 2.5,
+                maxZ: posZ + (profundo / 2) + 2.5
             });
         }
         escena.add(ciudad);
 
-        // 4. LOS CERROS ORIENTALES Y MONSERRATE
+        // 4. LOS CERROS ORIENTALES (Monserrate / Guadalupe)
         const cerros = new THREE.Group();
-        const matCerros = new THREE.MeshStandardMaterial({ color: 0x1f3d14, roughness: 1.0 }); // Verde bosque
+        const matCerros = new THREE.MeshStandardMaterial({ color: 0x1b3611, roughness: 1.0 }); // Verde oscuro andino
         const geometriaCerro = new THREE.ConeGeometry(1, 1, 16);
         geometriaCerro.translate(0, 0.5, 0);
 
-        for(let i = -1000; i < 1000; i += 100) {
+        // Creamos montañas superpuestas en el horizonte derecho
+        for(let i = -800; i < 800; i += 80) {
             const cerro = new THREE.Mesh(geometriaCerro, matCerros);
-            const radio = 150 + Math.random() * 200;
-            const altura = 300 + Math.random() * 300; // Muy altos
+            const radio = 100 + Math.random() * 150;
+            const altura = 200 + Math.random() * 250;
             cerro.scale.set(radio, altura, radio);
             
-            // Posicionamos a la derecha
-            let posZ = i + (Math.random() - 0.5) * 100;
-            cerro.position.set(500 + Math.random() * 100, 0, posZ);
+            // Posicionamos los cerros a la derecha de la ciudad
+            cerro.position.set(400 + Math.random() * 100, 0, i + (Math.random() - 0.5) * 100);
             cerro.castShadow = true;
             cerros.add(cerro);
-
-            // Colocamos Monserrate en uno de los cerros específicos
-            if (i === -200) {
-                const monserrate = new THREE.Mesh(
-                    new THREE.BoxGeometry(20, 25, 30), 
-                    new THREE.MeshStandardMaterial({ color: 0xffffff }) // Santuario Blanco
-                );
-                monserrate.position.set(500, altura - 10, posZ);
-                escena.add(monserrate);
-            }
         }
         escena.add(cerros);
 
@@ -315,7 +281,7 @@
             coche.position.z += Math.cos(anguloDireccion) * velocidad;
             coche.position.x += Math.sin(anguloDireccion) * velocidad;
 
-            // Colisiones con edificios y torre Colpatria
+            // Revisar colisión con los edificios
             let choco = false;
             for(let i = 0; i < limitesEdificios.length; i++) {
                 let limite = limitesEdificios[i];
@@ -326,8 +292,10 @@
                 }
             }
 
-            // Muro invisible en los cerros orientales
-            if (coche.position.x > 350) choco = true;
+            // Evitar que atraviese los cerros (muro invisible en X = 300)
+            if (coche.position.x > 300) {
+                choco = true;
+            }
 
             if (choco) {
                 coche.position.x = posicionPreviaX;
@@ -338,7 +306,7 @@
             // CÁMARA
             camara.position.x = coche.position.x + Math.sin(anguloDireccion) * 12; 
             camara.position.z = coche.position.z + Math.cos(anguloDireccion) * 12;
-            camara.position.y = 4.5;
+            camara.position.y = 4;
             camara.lookAt(coche.position);
 
             renderizador.render(escena, camara);
