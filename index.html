@@ -17,10 +17,383 @@
         #panel-control {
             position: absolute;
             top: 20px;
-            left: 20px;Parece que tu frase está un poquito incompleta o tiene un pequeño error de tipeo. Si estás describiendo una escena clásica del tráfico de Bogotá, aquí tienes algunas formas de decirlo correctamente, dependiendo de lo que quieras expresar:
+            left: 20px;
+            background: rgba(20, 30, 40, 0.85);
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 12px;
+            border-left: 4px solid #cc0000; 
+            pointer-events: none;
+            z-index: 100;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
 
-*   **Para indicar que hay un bus allí:** "Al lado del carril exclusivo, **hay** un TransMilenio."
-*   **Para indicar su ubicación exacta:** "Al lado del carril exclusivo, **está** un TransMilenio."
-*   **Para señalar o mostrar un bus específico:** "Al lado del carril exclusivo, **este es** un TransMilenio."
+        #panel-control h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.2rem;
+            color: #ffcc00; 
+            text-transform: uppercase;
+            font-weight: bold;
+        }
 
-¿Estás intentando traducir esta frase a otro idioma, corregir la gramática o estás escribiendo alguna historia sobre la ciudad?
+        #panel-control p { margin: 0; font-size: 0.9rem; color: #ddd; }
+
+        #controles-tactiles {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            z-index: 200;
+        }
+
+        .grupo-botones { display: flex; gap: 10px; }
+
+        .btn-tactil {
+            background: rgba(204, 0, 0, 0.2);
+            border: 2px solid rgba(204, 0, 0, 0.6);
+            color: white;
+            font-size: 24px;
+            width: 65px;
+            height: 65px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
+            transition: background 0.1s;
+        }
+
+        .btn-tactil:active, .btn-tactil.presionado {
+            background: rgba(204, 0, 0, 0.8);
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 600px) {
+            #panel-control { display: none; }
+            .btn-tactil { width: 55px; height: 55px; font-size: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="panel-control">
+        <h1>BOGOTÁ RACING</h1>
+        <p>Acelera por la vía libre</p>
+    </div>
+
+    <div id="controles-tactiles">
+        <div class="grupo-botones">
+            <div class="btn-tactil" id="btn-izq">⬅️</div>
+            <div class="btn-tactil" id="btn-der">➡️</div>
+        </div>
+        <div class="grupo-botones">
+            <div class="btn-tactil" id="btn-freno">⬇️</div>
+            <div class="btn-tactil" id="btn-acelerar">⬆️</div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        // 1. CONFIGURACIÓN DEL ENTORNO
+        const escena = new THREE.Scene();
+        const colorCielo = 0x8fa3b8; 
+        const colorNiebla = 0x9bb0c4; 
+        
+        escena.background = new THREE.Color(colorCielo);
+        escena.fog = new THREE.FogExp2(colorNiebla, 0.003); 
+        
+        const camara = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        const renderizador = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderizador.setSize(window.innerWidth, window.innerHeight);
+        renderizador.shadowMap.enabled = true;
+        renderizador.shadowMap.type = THREE.PCFSoftShadowMap; 
+        document.body.appendChild(renderizador.domElement);
+
+        const luzHemisferio = new THREE.HemisphereLight(0xffffff, 0x555566, 0.7);
+        escena.add(luzHemisferio);
+        
+        const luzSol = new THREE.DirectionalLight(0xffeedd, 0.8);
+        luzSol.position.set(200, 150, -200); 
+        luzSol.castShadow = true;
+        luzSol.shadow.camera.left = -300; luzSol.shadow.camera.right = 300;
+        luzSol.shadow.camera.top = 300; luzSol.shadow.camera.bottom = -300;
+        luzSol.shadow.mapSize.width = 2048;
+        luzSol.shadow.mapSize.height = 2048;
+        escena.add(luzSol);
+
+        // 2. SISTEMA DE COLISIONES
+        const limitesColisiones = [];
+
+        // 3. CONSTRUCCIÓN DEL COCHE F1
+        const coche = new THREE.Group();
+        const matVerde = new THREE.MeshStandardMaterial({ color: 0x008822, roughness: 0.2 });
+        const matNegro = new THREE.MeshStandardMaterial({ color: 0x111111 });
+
+        const trompa = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 2), matVerde);
+        trompa.position.set(0, 0.25, -1.5); trompa.castShadow = true; coche.add(trompa);
+
+        const cuerpo = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.5, 2.5), matVerde);
+        cuerpo.position.set(0, 0.35, 0.75); cuerpo.castShadow = true; coche.add(cuerpo);
+        
+        const aleronDel = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.05, 0.5), matVerde);
+        aleronDel.position.set(0, 0.15, -2.5); coche.add(aleronDel);
+
+        const aleronTras = new THREE.Mesh(new THREE.BoxGeometry(2, 0.05, 0.7), matVerde);
+        aleronTras.position.set(0, 0.9, 1.8); coche.add(aleronTras);
+
+        function crearRuedaF1(x, z) {
+            const rueda = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 0.4, 16), matNegro);
+            rueda.rotation.z = Math.PI / 2; rueda.position.set(x, 0.4, z);
+            rueda.castShadow = true; coche.add(rueda);
+        }
+        crearRuedaF1(1.1, -1.6); crearRuedaF1(-1.1, -1.6);
+        crearRuedaF1(1.1, 1.4); crearRuedaF1(-1.1, 1.4);
+        
+        // Ubicamos el F1 en el carril derecho, dejando libre el TransMilenio
+        coche.position.x = 8;
+        escena.add(coche);
+
+        // 4. LA CALLE Y EL CARRIL EXCLUSIVO
+        const suelo = new THREE.Mesh(new THREE.PlaneGeometry(3000, 3000), new THREE.MeshStandardMaterial({ color: 0x2b2b2b }));
+        suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
+
+        // Carretera principal (Ancho 40m)
+        const anchoCarretera = 40;
+        const carretera = new THREE.Mesh(new THREE.PlaneGeometry(anchoCarretera, 3000), new THREE.MeshStandardMaterial({ color: 0x151515 }));
+        carretera.rotation.x = -Math.PI / 2; carretera.position.y = 0.01; escena.add(carretera);
+
+        // Carril Exclusivo TransMilenio (Rojo, en el centro)
+        const carrilTM = new THREE.Mesh(new THREE.PlaneGeometry(8, 3000), new THREE.MeshStandardMaterial({ color: 0x8b1c1c, roughness: 0.8 }));
+        carrilTM.rotation.x = -Math.PI / 2; carrilTM.position.y = 0.02; escena.add(carrilTM);
+
+        // Separadores amarillos
+        const lineaGeo = new THREE.PlaneGeometry(0.3, 4);
+        const lineaMat = new THREE.MeshBasicMaterial({ color: 0xffcc00 });
+        for(let i = -1500; i < 1500; i += 8) {
+            const lineaIzq = new THREE.Mesh(lineaGeo, lineaMat);
+            lineaIzq.rotation.x = -Math.PI / 2; lineaIzq.position.set(-4.2, 0.03, i);
+            escena.add(lineaIzq);
+            
+            const lineaDer = new THREE.Mesh(lineaGeo, lineaMat);
+            lineaDer.rotation.x = -Math.PI / 2; lineaDer.position.set(4.2, 0.03, i);
+            escena.add(lineaDer);
+        }
+
+        // 5. CREADOR DE TRANSMILENIOS
+        function crearTransMilenio(posZ) {
+            const tmGroup = new THREE.Group();
+            const matRojoTM = new THREE.MeshStandardMaterial({ color: 0xcc0000, roughness: 0.5 });
+            const matGrisFuelle = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.9 });
+            const matNegroVentana = new THREE.MeshStandardMaterial({ color: 0x050505, roughness: 0.1 });
+
+            // Vagón delantero
+            const vagon1 = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3.5, 10), matRojoTM);
+            vagon1.position.set(0, 1.75, -6);
+            vagon1.castShadow = true;
+            
+            const franjaNegra1 = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.2, 9), matNegroVentana);
+            franjaNegra1.position.set(0, 2, -6);
+
+            // Fuelle (Acordeón)
+            const fuelle = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.2, 2), matGrisFuelle);
+            fuelle.position.set(0, 1.75, 0);
+
+            // Vagón trasero
+            const vagon2 = new THREE.Mesh(new THREE.BoxGeometry(3.5, 3.5, 10), matRojoTM);
+            vagon2.position.set(0, 1.75, 6);
+            vagon2.castShadow = true;
+
+            const franjaNegra2 = new THREE.Mesh(new THREE.BoxGeometry(3.6, 1.2, 9), matNegroVentana);
+            franjaNegra2.position.set(0, 2, 6);
+
+            tmGroup.add(vagon1, franjaNegra1, fuelle, vagon2, franjaNegra2);
+            
+            // Ubicarlos siempre en X = 0 (Dentro del carril rojo)
+            tmGroup.position.set(0, 0, posZ);
+            escena.add(tmGroup);
+
+            // Añadir hitbox del bus
+            limitesColisiones.push({
+                minX: -1.75 - 1.5, maxX: 1.75 + 1.5,
+                minZ: posZ - 11 - 1.5, maxZ: posZ + 11 + 1.5
+            });
+        }
+
+        // Generamos varios buses a lo largo de la vía
+        for (let i = -100; i > -2000; i -= 250) {
+            crearTransMilenio(i);
+        }
+
+        // 6. GENERACIÓN DE LA CIUDAD (Sin invadir la vía)
+        const ciudad = new THREE.Group();
+        const bloqueGeo = new THREE.BoxGeometry(1, 1, 1);
+        bloqueGeo.translate(0, 0.5, 0); 
+        const coloresBogota = [0x8b3a3a, 0xa55142, 0x9c4a3d, 0x555555, 0x404040, 0xaaaaaa, 0x7a3a29];
+
+        // Torre Colpatria
+        const colpatriaMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 });
+        const colpatria = new THREE.Mesh(new THREE.BoxGeometry(18, 160, 18), colpatriaMat);
+        colpatria.position.set(-60, 0, -200); // Bien alejada de la vía
+        colpatria.castShadow = true; colpatria.receiveShadow = true;
+        escena.add(colpatria);
+        
+        limitesColisiones.push({
+            minX: -60 - 9 - 2.5, maxX: -60 + 9 + 2.5,
+            minZ: -200 - 9 - 2.5, maxZ: -200 + 9 + 2.5
+        });
+
+        // Edificios normales
+        for(let i = 0; i < 500; i++) {
+            const edificioMat = new THREE.MeshStandardMaterial({ 
+                color: coloresBogota[Math.floor(Math.random() * coloresBogota.length)], 
+                roughness: 0.9 
+            });
+            const edificio = new THREE.Mesh(bloqueGeo, edificioMat);
+            
+            const ancho = 12 + Math.random() * 25;
+            const profundo = 12 + Math.random() * 25;
+            const alto = 15 + Math.random() * (Math.random() > 0.85 ? 100 : 50); 
+            edificio.scale.set(ancho, alto, profundo);
+
+            let posX = (Math.random() - 0.5) * 1200;
+            let posZ = (Math.random() - 0.5) * 1200;
+            
+            // CORRECCIÓN PRINCIPAL: Garantizar que ningún edificio toque la vía
+            // La vía mide 40 de ancho (-20 a 20). Añadimos el ancho del edificio para estar seguros.
+            const zonaSegura = (anchoCarretera / 2) + (ancho / 2) + 2; 
+            
+            if (Math.abs(posX) < zonaSegura) {
+                // Si el edificio cayó en la vía, lo empujamos hacia el lado más cercano
+                posX = posX > 0 ? zonaSegura : -zonaSegura;
+            }
+            
+            // Alejarlos de la Torre Colpatria y los Cerros Orientales
+            if (Math.abs(posX - (-60)) < 30 && Math.abs(posZ - (-200)) < 30) continue; 
+            if (posX > 350) posX -= 500;
+
+            edificio.position.set(posX, 0, posZ);
+            edificio.castShadow = true; edificio.receiveShadow = true;
+            ciudad.add(edificio);
+
+            limitesColisiones.push({
+                minX: posX - (ancho / 2) - 2.5, maxX: posX + (ancho / 2) + 2.5,
+                minZ: posZ - (profundo / 2) - 2.5, maxZ: posZ + (profundo / 2) + 2.5
+            });
+        }
+        escena.add(ciudad);
+
+        // 7. CERROS ORIENTALES
+        const cerros = new THREE.Group();
+        const matCerros = new THREE.MeshStandardMaterial({ color: 0x1f3d14, roughness: 1.0 });
+        const geometriaCerro = new THREE.ConeGeometry(1, 1, 16);
+        geometriaCerro.translate(0, 0.5, 0);
+
+        for(let i = -1000; i < 1000; i += 100) {
+            const cerro = new THREE.Mesh(geometriaCerro, matCerros);
+            const radio = 150 + Math.random() * 200;
+            const altura = 300 + Math.random() * 300; 
+            cerro.scale.set(radio, altura, radio);
+            
+            let posZ = i + (Math.random() - 0.5) * 100;
+            cerro.position.set(500 + Math.random() * 100, 0, posZ);
+            cerros.add(cerro);
+
+            if (i === -200) {
+                const monserrate = new THREE.Mesh(new THREE.BoxGeometry(20, 25, 30), new THREE.MeshStandardMaterial({ color: 0xffffff }));
+                monserrate.position.set(500, altura - 10, posZ);
+                escena.add(monserrate);
+            }
+        }
+        escena.add(cerros);
+
+        // 8. CONTROLES Y EVENTOS
+        const teclas = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+
+        window.addEventListener('keydown', (e) => { if(teclas.hasOwnProperty(e.code)) teclas[e.code] = true; });
+        window.addEventListener('keyup', (e) => { if(teclas.hasOwnProperty(e.code)) teclas[e.code] = false; });
+
+        function conectarBotonTactil(idBoton, codigoTecla) {
+            const btn = document.getElementById(idBoton);
+            btn.addEventListener('touchstart', (e) => { e.preventDefault(); teclas[codigoTecla] = true; btn.classList.add('presionado'); }, {passive: false});
+            btn.addEventListener('touchend', (e) => { e.preventDefault(); teclas[codigoTecla] = false; btn.classList.remove('presionado'); });
+            btn.addEventListener('mousedown', (e) => { e.preventDefault(); teclas[codigoTecla] = true; btn.classList.add('presionado'); });
+            btn.addEventListener('mouseup', (e) => { e.preventDefault(); teclas[codigoTecla] = false; btn.classList.remove('presionado'); });
+            btn.addEventListener('mouseleave', (e) => { teclas[codigoTecla] = false; btn.classList.remove('presionado'); });
+        }
+
+        conectarBotonTactil('btn-acelerar', 'ArrowUp');
+        conectarBotonTactil('btn-freno', 'ArrowDown');
+        conectarBotonTactil('btn-izq', 'ArrowLeft');
+        conectarBotonTactil('btn-der', 'ArrowRight');
+
+        // 9. FÍSICA Y ANIMACIÓN
+        let velocidad = 0;
+        let anguloDireccion = 0;
+
+        function animar() {
+            requestAnimationFrame(animar);
+
+            if (teclas.ArrowUp) velocidad -= 0.015; 
+            else if (teclas.ArrowDown) velocidad += 0.015;
+            else velocidad *= 0.97;
+
+            velocidad = Math.max(Math.min(velocidad, 1.2), -1.2);
+
+            if (Math.abs(velocidad) > 0.01) {
+                if (teclas.ArrowLeft) anguloDireccion += 0.05 * (velocidad < 0 ? 1 : -1);
+                if (teclas.ArrowRight) anguloDireccion -= 0.05 * (velocidad < 0 ? 1 : -1);
+            }
+
+            const posicionPreviaX = coche.position.x;
+            const posicionPreviaZ = coche.position.z;
+
+            coche.rotation.y = anguloDireccion;
+            coche.position.z += Math.cos(anguloDireccion) * velocidad;
+            coche.position.x += Math.sin(anguloDireccion) * velocidad;
+
+            // Revisar colisión con todo (Edificios, Torre y TransMilenios)
+            let choco = false;
+            for(let i = 0; i < limitesColisiones.length; i++) {
+                let limite = limitesColisiones[i];
+                if (coche.position.x > limite.minX && coche.position.x < limite.maxX &&
+                    coche.position.z > limite.minZ && coche.position.z < limite.maxZ) {
+                    choco = true;
+                    break;
+                }
+            }
+
+            // Muro en las montañas
+            if (coche.position.x > 350) choco = true;
+
+            if (choco) {
+                coche.position.x = posicionPreviaX;
+                coche.position.z = posicionPreviaZ;
+                velocidad = 0; 
+            }
+
+            // CÁMARA
+            camara.position.x = coche.position.x + Math.sin(anguloDireccion) * 12; 
+            camara.position.z = coche.position.z + Math.cos(anguloDireccion) * 12;
+            camara.position.y = 4.5;
+            camara.lookAt(coche.position);
+
+            renderizador.render(escena, camara);
+        }
+
+        window.addEventListener('resize', () => {
+            camara.aspect = window.innerWidth / window.innerHeight;
+            camara.updateProjectionMatrix();
+            renderizador.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animar();
+    </script>
+</body>
+</html>
